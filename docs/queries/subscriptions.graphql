@@ -1,0 +1,38 @@
+# Subscription test queries — DevConnectQL
+# Connect over WebSocket: ws://localhost:4000/graphql
+# Send connectionParams on ConnectionInit: { "authorization": "Bearer <token>" }
+
+subscription IssueStatusChanged($projectId: ID!) {
+  issueStatusChanged(projectId: $projectId) {
+    id
+    title
+    status
+  }
+}
+# Variables: { "projectId": "<project-id>" }
+# Fires whenever any client calls updateIssueStatus on an issue in this project.
+
+subscription CommentAdded($issueId: ID!) {
+  commentAdded(issueId: $issueId) {
+    id
+    message
+    author {
+      name
+    }
+  }
+}
+# Variables: { "issueId": "<issue-id>" }
+# Fires whenever any client calls addComment on this issue.
+
+subscription IssueAssigned($userId: ID!) {
+  issueAssigned(userId: $userId) {
+    id
+    title
+    assignedTo {
+      name
+    }
+  }
+}
+# Variables: { "userId": "<your-own-user-id>" }
+# $userId MUST match the subscribing user's own id, unless they're a global
+# ADMIN — otherwise this throws FORBIDDEN at subscribe time (privacy guard).
