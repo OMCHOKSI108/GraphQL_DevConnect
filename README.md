@@ -331,38 +331,38 @@ This makes the API more scalable and shows production-level GraphQL performance 
 
 ## Screenshots
 
-<table>
-  <tr>
-    <td align="center" width="50%">
-      <img src="docs/apollo_server.png" alt="Apollo Sandbox health query" width="100%" />
-      <br />
-      <sub><b>Health query</b> — Apollo Sandbox running <code>{ health }</code> against the live server</sub>
-    </td>
-    <td align="center" width="50%">
-      <img src="docs/apollo_test.png" alt="Apollo Sandbox with multiple saved operations" width="100%" />
-      <br />
-      <sub><b>Authenticated query</b> — saved operation tabs (Login, CreateProject, Issues, Comments) with a Bearer token set in Headers</sub>
-    </td>
-  </tr>
-  <tr>
-    <td align="center" width="50%">
-      <img src="docs/createproject_apollo_server.png" alt="createProject mutation response" width="100%" />
-      <br />
-      <sub><b>createProject mutation</b> — variables in, full nested response (id, title, owner) out</sub>
-    </td>
-    <td align="center" width="50%">
-      <img src="docs/prismastudio.png" alt="Prisma Studio User table" width="100%" />
-      <br />
-      <sub><b>Prisma Studio</b> — browsing seeded <code>User</code> rows directly against PostgreSQL</sub>
-    </td>
-  </tr>
-</table>
 
-<p align="center">
-  <img src="docs/prisma_visulize.png" alt="Prisma schema visualizer" width="70%" />
-  <br />
-  <sub><b>Schema visualizer</b> — <code>User</code> / <code>Project</code> / <code>ProjectMember</code> / <code>Issue</code> / <code>Comment</code> relations</sub>
-</p>
+### Authenticated session with saved operations
+
+Multiple saved operation tabs (Login, CreateProject, Projects, Issues,
+Comments) with a `Bearer` token set under Headers, used to drive the
+authenticated parts of the API end to end.
+
+![Apollo Sandbox with multiple saved operations](docs/apollo_test.png)
+
+### createProject mutation
+
+A full `createProject` call — variables in (`title`, `description`,
+`techStack`, `ownerId`), the created project's `id`, `title`, `description`,
+and resolved `owner` out.
+
+![createProject mutation response](docs/createproject_apollo_server.png)
+
+### Prisma Studio — browsing seeded data
+
+Prisma Studio open on the `User` table, showing seeded rows
+(`maintainer@example.com`, `om@example.com`) with their roles and skills,
+queried directly against PostgreSQL.
+
+![Prisma Studio User table](docs/prismastudio.png)
+
+### Schema visualizer
+
+Prisma's schema visualizer rendering the `User` / `Project` /
+`ProjectMember` / `Issue` / `Comment` relationships exactly as declared in
+`schema.prisma`.
+
+![Prisma schema visualizer](docs/prisma_visulize.png)
 
 ---
 
