@@ -1,0 +1,101 @@
+# Project test queries — DevConnectQL
+# All mutations here require an Authorization: Bearer <token> header.
+
+mutation CreateProject($input: CreateProjectInput!) {
+  createProject(input: $input) {
+    id
+    title
+    owner {
+      id
+      name
+    }
+    members {
+      role
+      user {
+        name
+      }
+    }
+  }
+}
+# Variables:
+# {
+#   "input": {
+#     "title": "DevConnectQL",
+#     "description": "Collaboration API",
+#     "techStack": ["GraphQL", "Prisma"],
+#     "ownerId": "<your-user-id>"
+#   }
+# }
+# Note: ownerId is required by the schema but ignored by the resolver — the
+# owner is always whoever's token is on the request.
+
+mutation AddProjectMember($projectId: ID!, $userId: ID!, $role: ProjectRole) {
+  addProjectMember(projectId: $projectId, userId: $userId, role: $role) {
+    id
+    role
+    user {
+      name
+    }
+  }
+}
+# Variables:
+# { "projectId": "<project-id>", "userId": "<user-id>", "role": "MEMBER" }
+# Requires: caller is the project OWNER or a global ADMIN.
+
+mutation DeleteProject($id: ID!) {
+  deleteProject(id: $id)
+}
+# Variables: { "id": "<project-id>" }
+# Requires: caller is the project OWNER or a global ADMIN.
+
+query Projects($first: Int, $after: String, $filter: ProjectFilterInput, $sort: ProjectSort) {
+  projects(first: $first, after: $after, filter: $filter, sort: $sort) {
+    totalCount
+    pageInfo {
+      hasNextPage
+      endCursor
+    }
+    edges {
+      cursor
+      node {
+        id
+        title
+        techStack
+        owner {
+          name
+        }
+        createdAt
+      }
+    }
+  }
+}
+# Variables (paginated, filtered, sorted):
+# {
+#   "first": 5,
+#   "filter": { "techStack": "GraphQL" },
+#   "sort": { "field": "CREATED_AT", "direction": "DESC" }
+# }
+
+query SingleProject($id: ID!) {
+  project(id: $id) {
+    id
+    title
+    description
+    techStack
+    owner {
+      name
+    }
+    members {
+      role
+      user {
+        name
+      }
+    }
+    issues {
+      id
+      title
+      status
+    }
+  }
+}
+# Variables: { "id": "<project-id>" }

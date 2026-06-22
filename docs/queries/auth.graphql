@@ -1,0 +1,48 @@
+# Auth test queries — DevConnectQL
+# Run against http://localhost:4000/graphql (no Authorization header needed
+# for Register/Login; use the returned token for Me).
+
+mutation Register($input: RegisterInput!) {
+  register(input: $input) {
+    token
+    user {
+      id
+      name
+      email
+      role
+    }
+  }
+}
+# Variables:
+# {
+#   "input": {
+#     "name": "Alice",
+#     "email": "alice@example.com",
+#     "password": "password123",
+#     "skills": ["GraphQL", "Node.js"]
+#   }
+# }
+
+mutation Login($input: LoginInput!) {
+  login(input: $input) {
+    token
+    user {
+      id
+      name
+      role
+    }
+  }
+}
+# Variables:
+# { "input": { "email": "om@example.com", "password": "password123" } }
+
+query Me {
+  me {
+    id
+    name
+    email
+    role
+    skills
+  }
+}
+# Requires header: { "Authorization": "Bearer <token>" }

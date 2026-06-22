@@ -1,0 +1,102 @@
+# Issue test queries — DevConnectQL
+# All mutations here require an Authorization: Bearer <token> header.
+
+mutation CreateIssue($input: CreateIssueInput!) {
+  createIssue(input: $input) {
+    id
+    title
+    status
+    priority
+    createdBy {
+      name
+    }
+  }
+}
+# Variables:
+# {
+#   "input": {
+#     "projectId": "<project-id>",
+#     "title": "Fix login bug",
+#     "description": "Users can't log in with valid credentials"
+#   }
+# }
+# Requires: caller is a member of the project (OWNER/MAINTAINER/MEMBER), or ADMIN.
+
+mutation AssignIssue($issueId: ID!, $userId: ID!) {
+  assignIssue(issueId: $issueId, userId: $userId) {
+    id
+    assignedTo {
+      id
+      name
+    }
+  }
+}
+# Variables: { "issueId": "<issue-id>", "userId": "<project-member-user-id>" }
+# Requires: caller is project OWNER/MAINTAINER or ADMIN; assignee must already
+# be a project member, otherwise this returns VALIDATION_ERROR.
+
+mutation UpdateIssueStatus($issueId: ID!, $status: IssueStatus!) {
+  updateIssueStatus(issueId: $issueId, status: $status) {
+    id
+    status
+  }
+}
+# Variables: { "issueId": "<issue-id>", "status": "IN_PROGRESS" }
+# Requires: caller is the assignee (or ADMIN) for non-CLOSED transitions;
+# closing requires the creator, a project MAINTAINER/OWNER, or ADMIN.
+
+query Issues($first: Int, $after: String, $filter: IssueFilterInput, $sort: IssueSort) {
+  issues(first: $first, after: $after, filter: $filter, sort: $sort) {
+    totalCount
+    pageInfo {
+      hasNextPage
+      endCursor
+    }
+    edges {
+      cursor
+      node {
+        id
+        title
+        status
+        priority
+        assignedTo {
+          name
+        }
+        createdBy {
+          name
+        }
+      }
+    }
+  }
+}
+# Variables (assigned to me, sorted by priority):
+# {
+#   "filter": { "assignedToMe": true },
+#   "sort": { "field": "PRIORITY", "direction": "DESC" }
+# }
+#
+# Variables (by status):
+# { "filter": { "status": "OPEN" } }
+#
+# Variables (created by me):
+# { "filter": { "createdByMe": true } }
+
+query SingleIssue($id: ID!) {
+  issue(id: $id) {
+    id
+    title
+    description
+    status
+    priority
+    project {
+      title
+    }
+    createdBy {
+      name
+    }
+    assignedTo {
+      name
+    }
+  }
+}
+# Variables: { "id": "<issue-id>" }

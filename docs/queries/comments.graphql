@@ -1,0 +1,38 @@
+# Comment test queries — DevConnectQL
+
+mutation AddComment($issueId: ID!, $message: String!) {
+  addComment(issueId: $issueId, message: $message) {
+    id
+    message
+    author {
+      name
+    }
+  }
+}
+# Variables: { "issueId": "<issue-id>", "message": "Looks good to me!" }
+# Requires: caller authenticated (no project-membership gate today — see
+# docs/rbac-rules.md for why this is a deliberate, documented scope decision).
+
+query IssueComments($id: ID!, $first: Int, $after: String) {
+  issue(id: $id) {
+    comments(first: $first, after: $after) {
+      totalCount
+      pageInfo {
+        hasNextPage
+        endCursor
+      }
+      edges {
+        cursor
+        node {
+          id
+          message
+          author {
+            name
+          }
+          createdAt
+        }
+      }
+    }
+  }
+}
+# Variables: { "id": "<issue-id>", "first": 5 }
