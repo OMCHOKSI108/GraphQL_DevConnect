@@ -1,0 +1,45 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: devconnectql_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-devconnectql_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-devconnectql_pass}
+      POSTGRES_DB: ${POSTGRES_DB:-devconnectql_db}
+    ports:
+      - "5432:5432"
+    volumes:
+      - devconnectql_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-devconnectql_user} -d ${POSTGRES_DB:-devconnectql_db}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    container_name: devconnectql_api
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      PORT: 4000
+      NODE_ENV: production
+      DATABASE_URL: postgresql://${POSTGRES_USER:-devconnectql_user}:${POSTGRES_PASSWORD:-devconnectql_pass}@postgres:5432/${POSTGRES_DB:-devconnectql_db}?schema=public
+      JWT_SECRET: ${JWT_SECRET:-devconnectql_dev_jwt_secret_change_me}
+      CORS_ORIGIN: ${CORS_ORIGIN:-*}
+    ports:
+      - "4000:4000"
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:4000/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+volumes:
+  devconnectql_postgres_data:

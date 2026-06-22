@@ -1,0 +1,64 @@
+name: CI
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+
+jobs:
+  build-and-test:
+    name: Build, lint schema, and test
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: devconnectql_user
+          POSTGRES_PASSWORD: devconnectql_pass
+          POSTGRES_DB: devconnectql_test_db
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U devconnectql_user -d devconnectql_test_db"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    defaults:
+      run:
+        working-directory: server
+
+    env:
+      DATABASE_URL: postgresql://devconnectql_user:devconnectql_pass@localhost:5432/devconnectql_test_db?schema=public
+      JWT_SECRET: ci_jwt_secret_for_pipeline_only
+      NODE_ENV: test
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+          cache-dependency-path: server/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Validate Prisma schema
+        run: npx prisma validate
+
+      - name: Generate Prisma client
+        run: npx prisma generate
+
+      - name: Build TypeScript
+        run: npm run build
+
+      - name: Apply database migrations
+        run: npx prisma migrate deploy
+
+      - name: Run tests
+        run: npm test

@@ -1,0 +1,27 @@
+databases:
+  - name: devconnectql-db
+    databaseName: devconnectql_db
+    user: devconnectql_user
+    plan: free
+    region: oregon
+
+services:
+  - type: web
+    name: devconnectql-api
+    runtime: docker
+    plan: free
+    region: oregon
+    dockerfilePath: ./server/Dockerfile
+    dockerContext: ./server
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        fromDatabase:
+          name: devconnectql-db
+          property: connectionString
+      - key: JWT_SECRET
+        generateValue: true
+      - key: CORS_ORIGIN
+        value: "*"
