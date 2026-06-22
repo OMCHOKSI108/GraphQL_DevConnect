@@ -1,7 +1,6 @@
 # DevConnectQL — Production-Style GraphQL Collaboration API
 
-[![CI](https://github.com/OMCHOKSI108/devconnectql/actions/workflows/ci.yml/badge.svg)](https://github.com/OMCHOKSI108/devconnectql/actions/workflows/ci.yml)
-[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/OMCHOKSI108/devconnectql)
+[![CI](https://github.com/OMCHOKSI108/GraphQL_DevConnect/actions/workflows/ci.yml/badge.svg)](https://github.com/OMCHOKSI108/GraphQL_DevConnect/actions/workflows/ci.yml)
 
 A developer collaboration / project-management API — a mini GitHub-meets-Jira backend
 — built to demonstrate production-grade GraphQL backend engineering: authentication,
