@@ -1,281 +1,638 @@
-# DevConnectQL — Production-Style GraphQL Collaboration API
+# DevConnectQL
 
-[![CI](https://github.com/OMCHOKSI108/GraphQL_DevConnect/actions/workflows/ci.yml/badge.svg)](https://github.com/OMCHOKSI108/GraphQL_DevConnect/actions/workflows/ci.yml)
+<p align="center">
+  <b>Production-Style GraphQL Collaboration API</b>
+</p>
 
-A developer collaboration / project-management API — a mini GitHub-meets-Jira backend
-— built to demonstrate production-grade GraphQL backend engineering: authentication,
-authorization, performance optimization, real-time updates, and clean service-oriented
-architecture.
+<p align="center">
+  A developer collaboration and project-management backend inspired by GitHub + Jira, built to demonstrate advanced GraphQL backend engineering with authentication, authorization, pagination, DataLoader optimization, subscriptions, tests, Docker, and CI.
+</p>
 
-## Why GraphQL here?
+<p align="center">
+  <a href="https://github.com/OMCHOKSI108/GraphQL_DevConnect/actions/workflows/ci.yml">
+    <img src="https://img.shields.io/github/actions/workflow/status/OMCHOKSI108/GraphQL_DevConnect/ci.yml?branch=master&label=CI&logo=github&style=for-the-badge" alt="CI Status" />
+  </a>
+  <img src="https://img.shields.io/badge/Node.js-Backend-339933?style=for-the-badge&logo=node.js&logoColor=white" alt="Node.js" />
+  <img src="https://img.shields.io/badge/TypeScript-Strict-3178C6?style=for-the-badge&logo=typescript&logoColor=white" alt="TypeScript" />
+  <img src="https://img.shields.io/badge/GraphQL-API-E10098?style=for-the-badge&logo=graphql&logoColor=white" alt="GraphQL" />
+  <img src="https://img.shields.io/badge/Apollo_Server-GraphQL-311C87?style=for-the-badge&logo=apollographql&logoColor=white" alt="Apollo Server" />
+  <img src="https://img.shields.io/badge/PostgreSQL-Database-4169E1?style=for-the-badge&logo=postgresql&logoColor=white" alt="PostgreSQL" />
+  <img src="https://img.shields.io/badge/Prisma-ORM-2D3748?style=for-the-badge&logo=prisma&logoColor=white" alt="Prisma" />
+  <img src="https://img.shields.io/badge/Docker-Ready-2496ED?style=for-the-badge&logo=docker&logoColor=white" alt="Docker" />
+  <img src="https://img.shields.io/badge/Vitest-Tested-6E9F18?style=for-the-badge&logo=vitest&logoColor=white" alt="Vitest" />
+</p>
 
-This domain is a natural fit for GraphQL rather than REST:
+---
 
-- **Nested, relational data.** A single screen might need a project, its members (with
-  their roles), its issues (with assignees and comments), and the comment authors — one
-  GraphQL query replaces several REST round-trips.
-- **Selective fields.** Clients ask for exactly the fields they render (e.g. just
-  `title` and `status` for a list view vs. the full issue with comments for a detail
-  view) without over- or under-fetching.
-- **Real-time collaboration.** Issue status changes, new comments, and assignments are
-  pushed live via GraphQL subscriptions instead of polling.
-- **Deeply nested relationship queries.** Project → members → user → assigned issues →
-  comments is expressed as one query shape instead of N manually-orchestrated REST
-  calls.
-- **Optimized fetching.** DataLoader batches the repeated per-row lookups that nested
-  GraphQL queries naturally produce, keeping the database query count constant instead
-  of growing with result size (the classic N+1 problem).
+## Overview
 
-## Features
+**DevConnectQL** is a production-style GraphQL backend for developer teams to manage projects, members, issues, assignments, comments, and real-time collaboration events.
 
-- JWT authentication (register/login, bcrypt password hashing)
-- PostgreSQL + Prisma ORM (driver-adapter client, no native query engine binary)
-- GraphQL queries, mutations, and subscriptions (Apollo Server 5 + `graphql-ws`)
-- Cursor-based pagination (Relay-style connections: `edges`, `pageInfo`, `totalCount`)
-- Filtering and sorting on projects and issues
-- DataLoader-based N+1 query optimization
-- Structured, typed errors (`AUTHENTICATION_REQUIRED`, `FORBIDDEN`, `NOT_FOUND`,
-  `VALIDATION_ERROR`, `CONFLICT`, `INTERNAL_SERVER_ERROR`)
-- Project-level role-based access control (OWNER / MAINTAINER / MEMBER), distinct from
-  the global user role (DEVELOPER / MAINTAINER / ADMIN)
-- Issue assignment with project-scoped authorization
-- Threaded comments per issue
-- Docker & Docker Compose for local and production-style deployment
-- GitHub Actions CI (build, schema validation, automated tests)
-- Automated test suite (Vitest) covering auth, RBAC, pagination, filtering, errors,
-  and subscriptions
+It is not a basic CRUD API. The project is designed to demonstrate real backend engineering concepts such as:
 
-## Tech stack
+* GraphQL schema design
+* Modular resolver/service/repository architecture
+* JWT authentication
+* Project-level authorization
+* Cursor pagination
+* Filtering and sorting
+* DataLoader-based N+1 optimization
+* GraphQL subscriptions
+* Structured error handling
+* Docker-based local setup
+* Automated tests
+* GitHub Actions CI
 
-| Layer            | Technology                                   |
-| ----------------- | --------------------------------------------- |
-| Language          | TypeScript (Node.js, ESM)                     |
-| API layer         | Apollo Server 5, GraphQL                      |
-| Real-time         | `graphql-ws`, `ws`, `graphql-subscriptions`   |
-| Database          | PostgreSQL                                    |
-| ORM                | Prisma 7 (driver adapter via `@prisma/adapter-pg`) |
-| Auth               | JWT (`jsonwebtoken`), `bcryptjs`              |
-| Performance        | `dataloader`                                  |
-| HTTP server        | Express 5                                     |
-| Testing            | Vitest                                        |
-| Containerization   | Docker, Docker Compose                        |
-| CI                 | GitHub Actions                                |
+---
+
+## Why GraphQL?
+
+This project is a strong GraphQL use case because the data is deeply relational.
+
+A frontend screen may need:
+
+* Project details
+* Project members
+* Member roles
+* Issues
+* Assignees
+* Comments
+* Comment authors
+* Real-time issue updates
+
+With REST, this often requires many endpoints and multiple round trips. With GraphQL, the client can request exactly the data shape it needs in one query.
+
+```graphql
+query ProjectOverview($projectId: ID!) {
+  project(id: $projectId) {
+    id
+    title
+    techStack
+    members {
+      role
+      user {
+        id
+        name
+      }
+    }
+    issues(first: 10) {
+      edges {
+        node {
+          id
+          title
+          status
+          priority
+          assignedTo {
+            name
+          }
+          comments(first: 3) {
+            edges {
+              node {
+                message
+                author {
+                  name
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+```
+
+---
+
+## Core Features
+
+### Authentication
+
+* Register
+* Login
+* JWT token generation
+* JWT verification through GraphQL context
+* Password hashing using bcrypt
+
+### Project Management
+
+* Create projects
+* Add project members
+* Project-level roles
+* Delete project with permission checks
+* Paginated project listing
+* Filtering and sorting
+
+### Issue Management
+
+* Create issues
+* Assign issues
+* Update issue status
+* Issue priority
+* Filter by status, assignment, creator, project
+* Sort by date, priority, and status
+
+### Comments
+
+* Add comments to issues
+* Paginated comments
+* Comment author resolution
+* Real-time comment subscription
+
+### Advanced GraphQL
+
+* Queries
+* Mutations
+* Subscriptions
+* Relay-style cursor pagination
+* Input filters
+* Sorting inputs
+* Nested relation resolution
+* Request-scoped DataLoader batching
+
+### Production Engineering
+
+* Structured errors
+* RBAC
+* Modular architecture
+* Docker support
+* Automated tests
+* GitHub Actions CI
+* Environment-based configuration
+
+---
+
+## Technology Stack
+
+| Category          | Technology                 |
+| ----------------- | --------------------------- |
+| Language          | TypeScript                 |
+| Runtime           | Node.js                    |
+| HTTP Server       | Express                    |
+| GraphQL Server    | Apollo Server              |
+| GraphQL Transport | HTTP + WebSocket           |
+| Real-time         | `graphql-ws`, `ws`, PubSub  |
+| Database          | PostgreSQL                 |
+| ORM               | Prisma                     |
+| Authentication    | JWT, bcrypt                |
+| Performance       | DataLoader                 |
+| Testing           | Vitest                     |
+| Containerization  | Docker, Docker Compose     |
+| CI/CD             | GitHub Actions             |
+
+---
 
 ## Architecture
 
 ```mermaid
 flowchart TD
-    Client[Client: GraphQL Playground / Frontend / WS client]
+    Client[Client / GraphQL Sandbox / Frontend]
+    
+    Client -->|HTTP Queries & Mutations| Apollo[Apollo Server]
+    Client -->|WebSocket Subscriptions| WS[graphql-ws Server]
 
-    Client -->|HTTP POST /graphql| ApolloServer[Apollo Server]
-    Client -->|WS ws:///graphql| WSServer[graphql-ws Server]
+    Apollo --> Context[GraphQL Context]
+    WS --> Context
 
-    ApolloServer --> Context[Context: JWT auth + request-scoped DataLoaders]
-    WSServer --> Context
+    Context --> Auth[JWT Auth]
+    Context --> Loaders[Request-Scoped DataLoaders]
 
-    Context --> Resolvers[Resolvers — modules/*/*.resolver.ts]
-    Resolvers --> Services[Services — modules/*/*.service.ts<br/>business rules + authorization]
-    Services --> Repositories[Repositories — modules/*/*.repository.ts<br/>raw Prisma calls]
+    Apollo --> Resolvers[Resolvers]
+    Resolvers --> Services[Services]
+    Services --> Repositories[Repositories]
     Repositories --> Prisma[Prisma Client]
-    Prisma --> Postgres[(PostgreSQL)]
+    Prisma --> DB[(PostgreSQL)]
 
-    Resolvers -.->|nested field reads| DataLoader[DataLoader<br/>per-request batched loaders]
-    DataLoader --> Prisma
+    Services --> PubSub[In-Memory PubSub]
+    PubSub --> WS
 
-    Services -->|publish events| PubSub[In-memory PubSub]
-    PubSub -->|issueStatusChanged / commentAdded / issueAssigned| WSServer
+    Loaders --> Prisma
 ```
 
-**Request lifecycle:** an HTTP request hits Apollo Server, which builds a fresh
-`GraphQLContext` per request (JWT verified → `AuthUser` + a fresh set of DataLoaders).
-Resolvers are thin bindings that call into a service function, which enforces
-authorization rules and calls a repository function for the actual Prisma query.
-Nested field resolvers (e.g. `Issue.createdBy`, `Project.owner`) read from the
-request-scoped DataLoaders instead of issuing a fresh query per row. Mutations that
-change shared state (`updateIssueStatus`, `assignIssue`, `addComment`) publish to an
-in-memory PubSub, which `graphql-ws` subscribers are listening on.
+### Request Lifecycle
 
-## Database schema
+```txt
+Client Request
+   ↓
+Apollo Server / graphql-ws
+   ↓
+GraphQL Context
+   ↓
+JWT Authentication
+   ↓
+Request-scoped DataLoaders
+   ↓
+Resolver
+   ↓
+Service Layer
+   ↓
+RBAC + Business Rules
+   ↓
+Repository Layer
+   ↓
+Prisma
+   ↓
+PostgreSQL
+```
 
-Defined in `server/prisma/schema.prisma`.
+---
 
-| Model           | Purpose                                                                 |
-| ---------------- | ------------------------------------------------------------------------ |
-| `User`           | Account + global `Role` (`DEVELOPER` / `MAINTAINER` / `ADMIN`)         |
-| `Project`        | Has one `owner` (`User`) and many `members` (`ProjectMember`)          |
-| `ProjectMember`  | Join table between `Project` and `User`, carrying a project-scoped `ProjectRole` (`OWNER` / `MAINTAINER` / `MEMBER`) |
-| `Issue`          | Belongs to a `Project`; has `createdBy`, optional `assignedTo`, `status`, `priority` |
-| `Comment`        | Belongs to an `Issue` and an `author` (`User`)                         |
+## Database Design
 
-Indexes (`@@index([createdAt, id])` and similar compound indexes on `Project`,
-`Issue`, and `Comment`) exist specifically to keep cursor-pagination's
-`ORDER BY createdAt, id` queries index-backed rather than full table scans.
+The schema is defined in:
 
-See [`docs/database-schema.md`](docs/database-schema.md) for full field-by-field
-detail and relationship diagrams.
+```txt
+server/prisma/schema.prisma
+```
 
-## RBAC rules
+### Main Models
 
-There are **two independent role systems**:
+| Model           | Purpose                                                          |
+| --------------- | ------------------------------------------------------------------ |
+| `User`          | Account, global role, skills, authentication data                |
+| `Project`       | Developer project or workspace                                   |
+| `ProjectMember` | Join table between users and projects with project-specific role |
+| `Issue`         | Project issue/task with status, priority, creator, assignee      |
+| `Comment`       | Discussion message attached to an issue                          |
 
-- **Global `Role`** on `User`: `DEVELOPER` / `MAINTAINER` / `ADMIN`. `ADMIN` is a
-  site-wide superuser override on every authorization check below. Global
-  `MAINTAINER` does **not** imply project-level maintainer status.
-- **Project-scoped `ProjectRole`** on `ProjectMember`: `OWNER` / `MAINTAINER` /
-  `MEMBER`. These only apply within the specific project the membership row belongs
-  to.
+### Role Systems
 
-| Action                          | ADMIN | Project OWNER | Project MAINTAINER | Project MEMBER | Outsider |
-| -------------------------------- | :---: | :------------: | :------------------: | :--------------: | :--------: |
-| View public project/issue lists  | ✅    | ✅              | ✅                    | ✅                | ✅          |
-| Create an issue in the project    | ✅    | ✅              | ✅                    | ✅                | ❌          |
-| Update progress on an issue assigned to them | ✅ | ✅ (if assignee) | ✅ (if assignee) | ✅ (if assignee) | ❌ |
-| Close an issue                   | ✅    | ✅              | ✅                    | only if creator   | ❌          |
-| Assign an issue to a project member | ✅ | ✅              | ✅                    | ❌                | ❌          |
-| Add a member to the project       | ✅    | ✅              | ❌                    | ❌                | ❌          |
-| Delete the project                | ✅    | ✅              | ❌                    | ❌                | ❌          |
-| View the full `users` list        | ✅    | ❌              | ❌                    | ❌                | ❌          |
+DevConnectQL uses two role systems.
 
-See [`docs/rbac-rules.md`](docs/rbac-rules.md) for the full rule-by-rule breakdown
-with the exact resolver/service functions that enforce each rule.
+#### Global User Role
 
-## GraphQL examples
+```txt
+DEVELOPER
+MAINTAINER
+ADMIN
+```
 
-All examples assume the API is running at `http://localhost:4000/graphql`. After
-`login`/`register`, pass the returned token as `Authorization: Bearer <token>`.
+#### Project Role
+
+```txt
+OWNER
+MAINTAINER
+MEMBER
+```
+
+This separation is important because a user can be a normal global `DEVELOPER`, but still be the `OWNER` of one specific project.
+
+---
+
+## RBAC Rules
+
+| Action                         | Admin | Project Owner | Project Maintainer | Project Member | Outsider |
+| ------------------------------- | :---: | :------------: | :------------------: | :--------------: | :--------: |
+| View public projects           |  Yes  |      Yes      |         Yes        |       Yes      |    Yes   |
+| Create project                 |  Yes  |      Yes      |         Yes        |       Yes      |    Yes   |
+| Add project member             |  Yes  |      Yes      |         No         |       No       |    No    |
+| Delete project                 |  Yes  |      Yes      |         No         |       No       |    No    |
+| Create issue in project        |  Yes  |      Yes      |         Yes        |       Yes      |    No    |
+| Assign issue                   |  Yes  |      Yes      |         Yes        |       No       |    No    |
+| Update assigned issue progress |  Yes  |  If assigned  |     If assigned    |   If assigned  |    No    |
+| Close issue                    |  Yes  |      Yes      |         Yes        |   If creator   |    No    |
+| Add comment                    |  Yes  |      Yes      |         Yes        |       Yes      |    Yes   |
+| View all users                 |  Yes  |       No      |         No         |       No       |    No    |
+
+> `Add comment` has no project-membership gate today — any authenticated user
+> can comment on any issue. This is a deliberate, documented scope decision
+> (see [`docs/rbac-rules.md`](docs/rbac-rules.md)), not an oversight.
+
+---
+
+## DataLoader Optimization
+
+GraphQL nested queries can easily create the N+1 problem.
+
+Example:
+
+```txt
+Fetch 20 issues
+For each issue, fetch createdBy user
+For each issue, fetch assignedTo user
+For each issue, fetch project
+```
+
+Without optimization, this can generate many repeated database queries.
+
+DevConnectQL uses request-scoped DataLoaders to batch and cache nested lookups within a single GraphQL request.
+
+```txt
+Without DataLoader:
+20 issues → 20 user queries + 20 project queries
+
+With DataLoader:
+20 issues → 1 batched user query + 1 batched project query
+```
+
+This makes the API more scalable and shows production-level GraphQL performance understanding.
+
+---
+
+## GraphQL Examples
+
+### Register
 
 ```graphql
 mutation Register {
-  register(input: { name: "Alice", email: "alice@example.com", password: "password123", skills: ["GraphQL"] }) {
+  register(
+    input: {
+      name: "Om Choksi"
+      email: "om@example.com"
+      password: "password123"
+      skills: ["GraphQL", "Node.js", "TypeScript"]
+    }
+  ) {
     token
-    user { id name role }
+    user {
+      id
+      name
+      email
+      role
+    }
   }
 }
+```
 
+### Login
+
+```graphql
 mutation Login {
-  login(input: { email: "alice@example.com", password: "password123" }) {
+  login(
+    input: {
+      email: "om@example.com"
+      password: "password123"
+    }
+  ) {
     token
+    user {
+      id
+      name
+      role
+    }
   }
 }
+```
 
-query Me {
-  me { id name email role }
+Use the token in headers:
+
+```json
+{
+  "Authorization": "Bearer YOUR_TOKEN_HERE"
 }
+```
 
+### Me Query
+
+```graphql
+query Me {
+  me {
+    id
+    name
+    email
+    role
+    skills
+  }
+}
+```
+
+### Create Project
+
+```graphql
 mutation CreateProject {
-  createProject(input: { title: "DevConnectQL", description: "desc", techStack: ["GraphQL"], ownerId: "<your-user-id>" }) {
+  createProject(
+    input: {
+      title: "DevConnectQL"
+      description: "Production-style GraphQL collaboration API"
+      techStack: ["GraphQL", "Apollo Server", "PostgreSQL", "Prisma"]
+      ownerId: "YOUR_USER_ID"
+    }
+  ) {
     id
     title
-    members { role user { name } }
+    owner {
+      name
+    }
   }
 }
+```
 
-mutation AddProjectMember {
-  addProjectMember(projectId: "<project-id>", userId: "<user-id>", role: MEMBER) {
-    role
-    user { name }
-  }
-}
+> `ownerId` is required by the schema but ignored by the resolver — the
+> project owner is always whoever's token is on the request.
 
+### Create Issue
+
+```graphql
 mutation CreateIssue {
-  createIssue(input: { projectId: "<project-id>", title: "Fix bug", description: "desc" }) {
+  createIssue(
+    input: {
+      projectId: "PROJECT_ID"
+      title: "Add subscription support"
+      description: "Add real-time issue status updates"
+    }
+  ) {
     id
     title
     status
     priority
   }
 }
+```
 
+`priority` defaults to `MEDIUM` and can't be set at creation today — it's
+changed later, the same way `status` is, if that's added as a follow-up.
+
+### Assign Issue
+
+```graphql
 mutation AssignIssue {
-  assignIssue(issueId: "<issue-id>", userId: "<member-user-id>") {
+  assignIssue(issueId: "ISSUE_ID", userId: "USER_ID") {
     id
-    assignedTo { name }
+    title
+    assignedTo {
+      id
+      name
+    }
   }
 }
+```
 
+### Update Issue Status
+
+```graphql
 mutation UpdateIssueStatus {
-  updateIssueStatus(issueId: "<issue-id>", status: IN_PROGRESS) {
+  updateIssueStatus(issueId: "ISSUE_ID", status: IN_PROGRESS) {
     id
+    title
     status
   }
 }
+```
 
+### Add Comment
+
+```graphql
 mutation AddComment {
-  addComment(issueId: "<issue-id>", message: "Looks good!") {
+  addComment(issueId: "ISSUE_ID", message: "I will work on this.") {
     id
     message
+    author {
+      name
+    }
   }
 }
+```
 
+### Paginated Projects
+
+```graphql
 query PaginatedProjects {
-  projects(first: 10, after: null, sort: { field: CREATED_AT, direction: DESC }) {
-    edges { cursor node { id title } }
-    pageInfo { hasNextPage endCursor }
+  projects(first: 10, after: null) {
+    edges {
+      cursor
+      node {
+        id
+        title
+        techStack
+      }
+    }
+    pageInfo {
+      hasNextPage
+      endCursor
+    }
     totalCount
   }
 }
+```
 
-query FilteredSortedIssues {
+### Filtered Issues
+
+```graphql
+query FilteredIssues {
   issues(
-    filter: { status: OPEN, assignedToMe: true }
-    sort: { field: PRIORITY, direction: DESC }
+    filter: {
+      status: OPEN
+      assignedToMe: true
+    }
+    sort: {
+      field: PRIORITY
+      direction: DESC
+    }
   ) {
-    edges { node { id title priority status } }
-  }
-}
-
-subscription IssueStatusChanged {
-  issueStatusChanged(projectId: "<project-id>") {
-    id
-    status
-    title
+    edges {
+      node {
+        id
+        title
+        status
+        priority
+      }
+    }
+    pageInfo {
+      hasNextPage
+      endCursor
+    }
+    totalCount
   }
 }
 ```
 
-More examples (with variables and header formats) live in
-[`docs/graphql-examples.md`](docs/graphql-examples.md).
+### Subscription
 
-## Setup locally
+```graphql
+subscription IssueStatusChanged {
+  issueStatusChanged(projectId: "PROJECT_ID") {
+    id
+    title
+    status
+  }
+}
+```
+
+---
+
+## Local Setup
+
+### 1. Clone Repository
 
 ```bash
-git clone <your-fork-url> devconnectql
-cd devconnectql/server
+git clone https://github.com/OMCHOKSI108/GraphQL_DevConnect.git
+cd GraphQL_DevConnect/server
+```
+
+### 2. Install Dependencies
+
+```bash
 npm install
+```
 
+### 3. Configure Environment
+
+```bash
 cp .env.example .env
-# edit .env: set DATABASE_URL, JWT_SECRET, CORS_ORIGIN
+```
 
-cd ..
-docker compose up -d postgres   # or run your own local Postgres
+Update `.env`:
 
+```env
+PORT=4000
+NODE_ENV=development
+DATABASE_URL="postgresql://devconnectql_user:devconnectql_pass@localhost:5432/devconnectql_db?schema=public"
+JWT_SECRET="replace_this_with_a_secure_secret"
+CORS_ORIGIN="http://localhost:3000"
+```
+
+### 4. Start PostgreSQL
+
+From project root:
+
+```bash
+docker compose up -d postgres
+```
+
+### 5. Run Prisma Migration
+
+```bash
 cd server
 npx prisma migrate dev
+npx prisma generate
+```
+
+### 6. Seed Database
+
+```bash
 npm run db:seed
+```
+
+### 7. Start Development Server
+
+```bash
 npm run dev
 ```
 
-The API is now available at `http://localhost:4000` (HTTP) and
-`ws://localhost:4000/graphql` (subscriptions).
+Open:
 
-## Docker setup
+```txt
+http://localhost:4000/graphql
+```
 
-To run the full stack (Postgres + API) in containers:
+---
+
+## Docker Setup
+
+Run the complete API stack using Docker:
 
 ```bash
 docker compose up --build
 ```
 
-This builds the production image (multi-stage: install → `prisma generate` →
-`tsc` build → slim production stage with only prod dependencies), waits for
-Postgres to report healthy, applies pending migrations automatically via the
-container's entrypoint, then starts the API.
+Available URLs:
 
-After it's up:
-
-- `http://localhost:4000` — welcome message
-- `http://localhost:4000/health` — health check
-- `http://localhost:4000/graphql` — GraphQL endpoint
+| URL                             | Purpose               |
+| -------------------------------- | ----------------------- |
+| `http://localhost:4000`         | API welcome route     |
+| `http://localhost:4000/health`  | Health check          |
+| `http://localhost:4000/graphql` | GraphQL endpoint      |
+| `ws://localhost:4000/graphql`   | GraphQL subscriptions |
 
 ### Deploying to Render
 
@@ -283,102 +640,178 @@ The repo root includes `render.yaml` — a [Render Blueprint](https://render.com
 that provisions the API (built from `server/Dockerfile`) and a managed
 PostgreSQL database together. Push to GitHub, then in Render: **New →
 Blueprint**, pick the repo, and click **Apply**. `JWT_SECRET` is generated
-automatically and `DATABASE_URL` is wired to the new database — no manual
-secret-juggling required. See [`docs/deployment.md`](docs/deployment.md) for
-the full walkthrough and what to change before going to production
-(`CORS_ORIGIN` in particular).
+automatically and `DATABASE_URL` is wired to the new database. See
+[`docs/deployment.md`](docs/deployment.md) for the full walkthrough.
 
-See [`docs/deployment.md`](docs/deployment.md) for Render/Railway notes and
-troubleshooting.
+---
 
 ## Testing
 
 ```bash
 cd server
-npm test            # run once
-npm run test:watch  # watch mode
+npm test
+```
+
+Watch mode:
+
+```bash
+npm run test:watch
+```
+
+Coverage:
+
+```bash
 npm run test:coverage
 ```
 
-Tests run against a dedicated `devconnectql_test_db` Postgres database (configured
-in `vitest.config.ts`) and execute real GraphQL operations against the schema —
-covering auth, project/issue CRUD, pagination, filtering/sorting, the full
-`assignIssue` RBAC matrix, comments, subscriptions, and structured error shapes.
+Build check:
 
 ```bash
-npm run build   # tsc, must pass with zero errors
+npm run build
 ```
 
-## Environment variables
+---
 
-Defined in `server/.env.example`:
+## Available Scripts
 
-| Variable        | Purpose                                                        |
-| ---------------- | ----------------------------------------------------------------- |
-| `PORT`           | HTTP port the API listens on (default `4000`)                  |
-| `NODE_ENV`       | `development` / `production` / `test`                          |
-| `DATABASE_URL`   | PostgreSQL connection string                                     |
-| `JWT_SECRET`     | Secret used to sign/verify JWTs — **must** be overridden in production |
-| `CORS_ORIGIN`    | Allowed CORS origin(s), comma-separated, or `*` for any         |
+| Script                  | Purpose                             |
+| ------------------------ | -------------------------------------- |
+| `npm run dev`           | Start development server            |
+| `npm run build`         | Compile TypeScript                  |
+| `npm start`             | Run compiled production build       |
+| `npm test`              | Run test suite                      |
+| `npm run test:watch`    | Run tests in watch mode             |
+| `npm run test:coverage` | Generate test coverage              |
+| `npm run db:generate`   | Generate Prisma Client              |
+| `npm run db:migrate`    | Run Prisma migration in development |
+| `npm run db:deploy`     | Apply migrations in production      |
+| `npm run db:seed`       | Seed database                       |
+| `npm run db:studio`     | Open Prisma Studio                  |
+| `npm run db:reset`      | Reset database and reseed           |
 
-Never commit a real `.env` file — only `.env.example` (with placeholder values) is
-tracked in git.
+---
 
-## Project structure
+## Environment Variables
 
-```
-devconnectql/
-├── docker-compose.yml          # postgres + api services
-├── render.yaml                 # Render Blueprint (API + managed Postgres)
-├── docs/                       # architecture, RBAC, schema, examples, deployment
-├── .github/workflows/ci.yml    # GitHub Actions pipeline
+| Variable       | Example                 | Description                  |
+| --------------- | ------------------------- | -------------------------------- |
+| `PORT`         | `4000`                  | API server port              |
+| `NODE_ENV`     | `development`           | Runtime environment          |
+| `DATABASE_URL` | `postgresql://...`      | PostgreSQL connection string |
+| `JWT_SECRET`   | `replace_this`          | JWT signing secret           |
+| `CORS_ORIGIN`  | `http://localhost:3000` | Allowed frontend origin      |
+
+Never commit `.env`.
+
+---
+
+## Project Structure
+
+```txt
+GraphQL_DevConnect/
+├── docker-compose.yml
+├── render.yaml
+├── docs/
+│   ├── architecture.md
+│   ├── database-schema.md
+│   ├── deployment.md
+│   ├── graphql-examples.md
+│   └── rbac-rules.md
+├── .github/
+│   └── workflows/
+│       └── ci.yml
 └── server/
-    ├── Dockerfile               # multi-stage production build
-    ├── docker-entrypoint.sh     # runs migrate deploy, then starts the server
+    ├── Dockerfile
+    ├── docker-entrypoint.sh
+    ├── package.json
     ├── prisma/
     │   ├── schema.prisma
-    │   ├── migrations/
-    │   └── seed.ts
+    │   ├── seed.ts
+    │   └── migrations/
     ├── src/
-    │   ├── app.ts               # Express + Apollo + graphql-ws wiring
-    │   ├── server.ts            # process entrypoint
-    │   ├── config/              # env, Prisma client singleton
-    │   ├── graphql/             # typeDefs, resolvers aggregator, schema, pubsub, context
-    │   ├── loaders/             # DataLoader factory
+    │   ├── app.ts
+    │   ├── server.ts
+    │   ├── config/
+    │   ├── graphql/
+    │   ├── loaders/
     │   ├── modules/
     │   │   ├── auth/
     │   │   ├── users/
     │   │   ├── projects/
     │   │   ├── issues/
     │   │   └── comments/
-    │   │       # each module: repository.ts (Prisma calls) /
-    │   │       # service.ts (business rules + authorization) /
-    │   │       # resolver.ts (thin GraphQL binding)
-    │   └── utils/                # auth helpers, structured errors, pagination
-    └── tests/                    # Vitest suite + test helpers
+    │   └── utils/
+    └── tests/
 ```
 
-## Learning outcomes
+---
+
+## Documentation
+
+| Document                                               | Description                                |
+| -------------------------------------------------------- | --------------------------------------------- |
+| [`docs/architecture.md`](docs/architecture.md)         | System architecture and request lifecycle  |
+| [`docs/database-schema.md`](docs/database-schema.md)   | Prisma models and relationships            |
+| [`docs/graphql-examples.md`](docs/graphql-examples.md) | Query, mutation, and subscription examples |
+| [`docs/rbac-rules.md`](docs/rbac-rules.md)             | Role-based authorization rules             |
+| [`docs/deployment.md`](docs/deployment.md)             | Deployment notes and troubleshooting       |
+
+---
+
+## CI Pipeline
+
+GitHub Actions validates the project on every push and pull request.
+
+CI checks:
+
+```txt
+npm ci
+Prisma generate
+Prisma schema validation
+TypeScript build
+Automated tests
+```
+
+---
+
+## Error Handling
+
+The API uses structured application errors.
+
+| Error Code                | Meaning                               |
+| --------------------------- | ----------------------------------------- |
+| `AUTHENTICATION_REQUIRED` | User must be logged in                |
+| `FORBIDDEN`               | User is not allowed to perform action |
+| `NOT_FOUND`               | Resource does not exist               |
+| `VALIDATION_ERROR`        | Invalid input                         |
+| `CONFLICT`                | Duplicate or conflicting resource     |
+| `INTERNAL_SERVER_ERROR`   | Unexpected server error               |
+
+---
+
+## Learning Outcomes
 
 This project demonstrates:
 
-- **GraphQL schema design** — Relay-style connections, input types, enums, and a
-  Subscription type alongside Query/Mutation.
-- **Resolver/service/repository separation** — resolvers stay thin; business rules
-  and authorization live in services; Prisma calls are isolated in repositories.
-- **Authorization design** — moving from a single global role check to
-  resource-scoped, per-action permission functions (`canCreateIssue`,
-  `canUpdateIssueProgress`, `canCloseIssue`, `canAssignIssue`, `canDeleteProject`,
-  `canAddProjectMember`).
-- **Performance optimization** — recognizing and fixing the N+1 problem with
-  request-scoped DataLoader batching.
-- **Real-time API design** — wiring `graphql-ws` alongside a traditional HTTP GraphQL
-  server on a shared `http.Server`, with topic-scoped pub/sub and subscribe-time
-  authorization.
-- **Production readiness** — structured error codes, Docker multi-stage builds,
-  CI, environment-based configuration, and an automated test suite.
+* GraphQL schema design
+* Advanced resolver patterns
+* Query, mutation, and subscription design
+* JWT authentication
+* Global and project-scoped RBAC
+* Prisma relational modeling
+* Cursor pagination
+* Filtering and sorting
+* DataLoader optimization
+* Structured error handling
+* Modular backend architecture
+* Dockerized development
+* Automated testing
+* CI workflow setup
+
+---
 
 ## Author
 
 **Om Choksi**
+
 GitHub: [OMCHOKSI108](https://github.com/OMCHOKSI108)
