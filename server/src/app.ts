@@ -73,6 +73,10 @@ export async function createApp() {
     });
   });
 
+  app.get("/graphql", (_req, res) => {
+    res.json({ message: "DevConnectQL API — send POST requests with Content-Type: application/json" });
+  });
+
   const wsServer = new WebSocketServer({ server: httpServer, path: "/graphql" });
   const wsServerCleanup = useServer({ schema, context: createWsContext }, wsServer);
 
