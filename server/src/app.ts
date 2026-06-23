@@ -117,6 +117,10 @@ export async function createApp() {
 
   await apolloServer.start();
 
+  app.get("/graphql", (_req, res) => {
+    res.json({ message: "Use POST with Content-Type: application/json. Open Apollo Studio: https://studio.apollographql.com/sandbox?endpoint=https://devconnectql-api.onrender.com/graphql" });
+  });
+
   app.use(
     "/graphql",
     expressMiddleware(apolloServer, {
