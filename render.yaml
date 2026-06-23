@@ -1,10 +1,3 @@
-databases:
-  - name: devconnectql-db
-    databaseName: devconnectql_db
-    user: devconnectql_user
-    plan: free
-    region: oregon
-
 services:
   - type: web
     name: devconnectql-api
@@ -18,10 +11,8 @@ services:
       - key: NODE_ENV
         value: production
       - key: DATABASE_URL
-        fromDatabase:
-          name: devconnectql-db
-          property: connectionString
+        sync: false
       - key: JWT_SECRET
-        generateValue: true
+        sync: false
       - key: CORS_ORIGIN
-        value: "*"
+        value: "https://your-frontend-domain.com"

@@ -98,6 +98,7 @@ export async function listIssues(
 }
 
 export async function getIssue(context: GraphQLContext, id: string) {
+  requireAuth(context);
   return issuesRepository.findById(context.prisma, id);
 }
 
