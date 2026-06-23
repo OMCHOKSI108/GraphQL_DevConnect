@@ -42,7 +42,7 @@ describe("comments", () => {
     expect(result.data?.addComment).toMatchObject({ message: "Looks good", author: { id: owner.id } });
   });
 
-  it("currently allows any authenticated user to comment, even outside the project (no membership gate yet)", async () => {
+  it("rejects comments from a user who is not a project member", async () => {
     const owner = await createUser("Owner", "owner@example.com");
     const outsider = await createUser("Outsider", "outsider@example.com");
     const project = await createProjectWithMembers(owner);
@@ -54,8 +54,7 @@ describe("comments", () => {
       contextValue: buildContext(outsider)
     });
 
-    expect(result.errors).toBeUndefined();
-    expect(result.data?.addComment).toMatchObject({ author: { id: outsider.id } });
+    expect(result.errors?.[0].extensions?.code).toBe("FORBIDDEN");
   });
 
   it("rejects commenting from an unauthenticated context", async () => {
@@ -88,7 +87,7 @@ describe("comments", () => {
     const result = await executeOperation({
       query: ISSUE_COMMENTS,
       variables: { id: issue.id, first: 2 },
-      contextValue: buildContext(null)
+      contextValue: buildContext(owner)
     });
 
     const comments = (result.data?.issue as any).comments;

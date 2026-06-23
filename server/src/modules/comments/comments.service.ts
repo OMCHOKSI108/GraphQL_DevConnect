@@ -1,6 +1,6 @@
 import type { GraphQLContext } from "../../graphql/context.js";
 import { requireAuth } from "../auth/auth.service.js";
-import { NotFoundError } from "../../utils/errors.js";
+import { ForbiddenError, NotFoundError } from "../../utils/errors.js";
 import { paginate, type ConnectionArgs } from "../../utils/pagination.js";
 import { pubsub, TOPICS } from "../../graphql/pubsub.js";
 import { commentsRepository } from "./comments.repository.js";
@@ -23,6 +23,12 @@ export async function addComment(context: GraphQLContext, issueId: string, messa
 
   if (!issue) {
     throw new NotFoundError("Issue not found");
+  }
+
+  const membership = await context.loaders.membershipByProjectAndUser.load(`${issue.projectId}:${user.id}`);
+
+  if (!membership && user.role !== "ADMIN") {
+    throw new ForbiddenError("Only project members can add comments");
   }
 
   const newComment = await commentsRepository.create(context.prisma, {

@@ -1,6 +1,8 @@
 import http from "http";
 import express from "express";
 import cors from "cors";
+import helmet from "helmet";
+import rateLimit from "express-rate-limit";
 import { ApolloServer } from "@apollo/server";
 import { ApolloServerPluginDrainHttpServer } from "@apollo/server/plugin/drainHttpServer";
 import { expressMiddleware } from "@as-integrations/express5";
@@ -18,8 +20,40 @@ export async function createApp() {
   const httpServer = http.createServer(app);
 
   const corsOrigin = process.env.CORS_ORIGIN ?? "*";
+  app.use(helmet({
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        baseUri: ["'self'"],
+        fontSrc: ["'self'", "https:", "data:"],
+        formAction: ["'self'"],
+        frameAncestors: ["'self'"],
+        imgSrc: ["'self'", "data:"],
+        objectSrc: ["'none'"],
+        scriptSrc: ["'self'"],
+        scriptSrcAttr: ["'none'"],
+        styleSrc: ["'self'", "https:", "'unsafe-inline'"],
+        upgradeInsecureRequests: [],
+      },
+    },
+  }));
+  app.use((_req, res, next) => {
+    res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate, private");
+    res.setHeader("Permissions-Policy", "geolocation=(), microphone=(), camera=()");
+    res.setHeader("Cross-Origin-Resource-Policy", "same-origin");
+    next();
+  });
   app.use(cors({ origin: corsOrigin === "*" ? true : corsOrigin.split(",") }));
-  app.use(express.json());
+  app.use(express.json({ limit: "10kb" }));
+
+  const graphqlLimiter = rateLimit({
+    windowMs: 60_000,
+    max: 100,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { errors: [{ message: "Too many requests, please try again later" }] }
+  });
+  app.use("/graphql", graphqlLimiter);
 
   app.get("/", (_req, res) => {
     res.json({
@@ -44,12 +78,19 @@ export async function createApp() {
   const apolloServer = new ApolloServer({
     schema,
     includeStacktraceInErrorResponses: false,
+    maxRecursiveSelections: 7,
     formatError: (formattedError, error) => {
-      const isAppError =
-        error instanceof AppError ||
-        (error instanceof GraphQLError && error.originalError instanceof AppError);
+      const code = formattedError.extensions?.code as string | undefined;
 
-      if (isAppError) {
+      if (code !== "INTERNAL_SERVER_ERROR") {
+        return formattedError;
+      }
+
+      if (error instanceof AppError) {
+        return formattedError;
+      }
+
+      if (error instanceof GraphQLError && error.originalError instanceof AppError) {
         return formattedError;
       }
 
@@ -81,6 +122,10 @@ export async function createApp() {
       context: async ({ req }) => createContext({ req })
     })
   );
+
+  app.use((_req, res) => {
+    res.json({ error: "Not found" });
+  });
 
   async function shutdown() {
     await apolloServer.stop();

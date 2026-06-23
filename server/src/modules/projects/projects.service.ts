@@ -77,6 +77,7 @@ export async function listProjects(
 }
 
 export async function getProject(context: GraphQLContext, id: string) {
+  requireAuth(context);
   return projectsRepository.findById(context.prisma, id);
 }
 
