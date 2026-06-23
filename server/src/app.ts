@@ -5,6 +5,7 @@ import helmet from "helmet";
 import rateLimit from "express-rate-limit";
 import { ApolloServer } from "@apollo/server";
 import { ApolloServerPluginDrainHttpServer } from "@apollo/server/plugin/drainHttpServer";
+import { ApolloServerPluginLandingPageDisabled } from "@apollo/server/plugin/disabled";
 import { expressMiddleware } from "@as-integrations/express5";
 import { GraphQLError } from "graphql";
 import { WebSocketServer } from "ws";
@@ -101,6 +102,7 @@ export async function createApp() {
       }).toJSON();
     },
     plugins: [
+      ApolloServerPluginLandingPageDisabled(),
       ApolloServerPluginDrainHttpServer({ httpServer }),
       {
         async serverWillStart() {
