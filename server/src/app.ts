@@ -5,7 +5,6 @@ import helmet from "helmet";
 import rateLimit from "express-rate-limit";
 import { ApolloServer } from "@apollo/server";
 import { ApolloServerPluginDrainHttpServer } from "@apollo/server/plugin/drainHttpServer";
-import { ApolloServerPluginLandingPageDisabled } from "@apollo/server/plugin/disabled";
 import { expressMiddleware } from "@as-integrations/express5";
 import { GraphQLError } from "graphql";
 import { WebSocketServer } from "ws";
@@ -29,11 +28,12 @@ export async function createApp() {
         fontSrc: ["'self'", "https:", "data:"],
         formAction: ["'self'"],
         frameAncestors: ["'self'"],
-        imgSrc: ["'self'", "data:"],
+        imgSrc: ["'self'", "data:", "https://apollo-server-landing-page.cdn.apollographql.com"],
         objectSrc: ["'none'"],
-        scriptSrc: ["'self'"],
+        scriptSrc: ["'self'", "https://apollo-server-landing-page.cdn.apollographql.com"],
         scriptSrcAttr: ["'none'"],
-        styleSrc: ["'self'", "https:", "'unsafe-inline'"],
+        styleSrc: ["'self'", "https:", "'unsafe-inline'", "https://apollo-server-landing-page.cdn.apollographql.com"],
+        connectSrc: ["'self'", "https://apollo-server-landing-page.cdn.apollographql.com", "https://engine-report.apollodata.com"],
         upgradeInsecureRequests: [],
       },
     },
@@ -73,10 +73,6 @@ export async function createApp() {
     });
   });
 
-  app.get("/graphql", (_req, res) => {
-    res.json({ message: "DevConnectQL API — send POST requests with Content-Type: application/json" });
-  });
-
   const wsServer = new WebSocketServer({ server: httpServer, path: "/graphql" });
   const wsServerCleanup = useServer({ schema, context: createWsContext }, wsServer);
 
@@ -106,7 +102,6 @@ export async function createApp() {
       }).toJSON();
     },
     plugins: [
-      ApolloServerPluginLandingPageDisabled(),
       ApolloServerPluginDrainHttpServer({ httpServer }),
       {
         async serverWillStart() {
